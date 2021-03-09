@@ -33,7 +33,7 @@ describe('Extension', () => {
       count: 0,
       id: '11',
       isAllowed: true,
-      origin: 'cennznet.io',
+      origin: 'example.com',
       url: 'http://localhost:3000'
     };
     localStorage.setItem('authUrls', JSON.stringify(authUrls));
