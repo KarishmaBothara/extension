@@ -13,6 +13,7 @@ import State, { AuthUrls } from './State';
 import Tabs from './Tabs';
 import { MetadataDef } from "@polkadot/extension-inject/types";
 import type { SignerPayloadJSON } from '@polkadot/types/types';
+import { ResponseSigning } from "@polkadot/extension-base/background/types";
 
 describe('Extension', () => {
   let extension: Extension;
@@ -182,7 +183,10 @@ describe('Extension', () => {
 
     test('signs with default signed extensions', async () => {
 
-      tabs.handle('1615191860871.5', 'pub(extrinsic.sign)', payload, 'http://localhost:3000',{} as chrome.runtime.Port);
+      tabs.handle('1615191860871.5', 'pub(extrinsic.sign)', payload, 'http://localhost:3000',{} as chrome.runtime.Port)
+        .then((result ) => {
+          expect((result as ResponseSigning)?.signature).toEqual('0x0002400e60569625020f56ad5a354fffcf56f340e1ccb359713ea4214108684737ea1fa8759e61b2c46b060623b55db16ab850cbeb3419787352331fe934f4e702')
+        });
 
       await expect(extension.handle('1615192072290.7', 'pri(signing.approve.password)', {
         id: state.allSignRequests[0].id,
@@ -227,7 +231,10 @@ describe('Extension', () => {
       };
       state.saveMetadata(meta);
 
-      tabs.handle('1615191860771.5', 'pub(extrinsic.sign)', payload, 'http://localhost:3000',{} as chrome.runtime.Port);
+      tabs.handle('1615191860771.5', 'pub(extrinsic.sign)', payload, 'http://localhost:3000',{} as chrome.runtime.Port)
+        .then((result ) => {
+          expect((result as ResponseSigning)?.signature).toEqual('0x00bb42e63cb8214678a4c045c1832f4a1889393c68fd971f9bbcce0d13837a66b4b3ba3757827c33fbb06158d85440d8f9939208bddc3bf9b13d685162ebf57c0e')
+        });
 
       await expect(extension.handle('1615192062290.7', 'pri(signing.approve.password)', {
         id: state.allSignRequests[0].id,
@@ -236,7 +243,6 @@ describe('Extension', () => {
       }, {} as chrome.runtime.Port)).resolves.toEqual(true);
 
     });
-
 
     test('signs with user extensions, additional types', async () => {
 
@@ -285,7 +291,11 @@ describe('Extension', () => {
         version: 4,
       } as unknown as SignerPayloadJSON;
 
-      tabs.handle('1615191860771.5', 'pub(extrinsic.sign)', payload, 'http://localhost:3000',{} as chrome.runtime.Port);
+      tabs.handle('1615191860771.5', 'pub(extrinsic.sign)', payload, 'http://localhost:3000',{} as chrome.runtime.Port)
+        .then((result ) => {
+          expect((result as ResponseSigning)?.signature).toEqual('0x00d5740b2f51c93f762d253a8fb16ed73e8475f1306f8e9852d716247cfaff3561ff10027f3cdee5a349a7da4a0eba281f375f10540a5ea3016dc4c45a4bda9004')
+        });
+
       await expect(extension.handle('1615192062290.7', 'pri(signing.approve.password)', {
         id: state.allSignRequests[0].id,
         password,
