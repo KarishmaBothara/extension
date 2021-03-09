@@ -14,6 +14,8 @@ import Tabs from './Tabs';
 import { MetadataDef } from "@polkadot/extension-inject/types";
 import type { SignerPayloadJSON } from '@polkadot/types/types';
 import { ResponseSigning } from "@polkadot/extension-base/background/types";
+import { TypeRegistry } from '@polkadot/types';
+import { KeyringPair } from "@polkadot/keyring/types";
 
 describe('Extension', () => {
   let extension: Extension;
@@ -161,10 +163,12 @@ describe('Extension', () => {
   });
 
   describe('custom user extension', () => {
-    let address: string, payload: SignerPayloadJSON;
+    let address: string, payload: SignerPayloadJSON, pair: KeyringPair;
 
     beforeEach(async () => {
       address = await createAccount();
+      pair = keyring.getPair(address);
+      pair.decodePkcs8(password);
       payload = {
         address,
         blockHash: "0xe1b1dda72998846487e4d858909d4f9a6bbd6e338e4588e5d809de16b1317b80",
@@ -183,9 +187,15 @@ describe('Extension', () => {
 
     test('signs with default signed extensions', async () => {
 
+      const registry = new TypeRegistry();
+      registry.setSignedExtensions(payload.signedExtensions);
+
+      const signatureExpected = registry
+        .createType('ExtrinsicPayload', payload, { version: payload.version }).sign(pair);
+
       tabs.handle('1615191860871.5', 'pub(extrinsic.sign)', payload, 'http://localhost:3000',{} as chrome.runtime.Port)
         .then((result ) => {
-          expect((result as ResponseSigning)?.signature).toEqual('0x0002400e60569625020f56ad5a354fffcf56f340e1ccb359713ea4214108684737ea1fa8759e61b2c46b060623b55db16ab850cbeb3419787352331fe934f4e702')
+          expect((result as ResponseSigning)?.signature).toEqual(signatureExpected.signature)
         });
 
       await expect(extension.handle('1615192072290.7', 'pri(signing.approve.password)', {
@@ -231,9 +241,16 @@ describe('Extension', () => {
       };
       state.saveMetadata(meta);
 
+      const registry = new TypeRegistry();
+      registry.setSignedExtensions(payload.signedExtensions, userExtensions);
+      registry.register(types);
+
+      const signatureExpected = registry
+        .createType('ExtrinsicPayload', payload, { version: payload.version }).sign(pair);
+
       tabs.handle('1615191860771.5', 'pub(extrinsic.sign)', payload, 'http://localhost:3000',{} as chrome.runtime.Port)
         .then((result ) => {
-          expect((result as ResponseSigning)?.signature).toEqual('0x00bb42e63cb8214678a4c045c1832f4a1889393c68fd971f9bbcce0d13837a66b4b3ba3757827c33fbb06158d85440d8f9939208bddc3bf9b13d685162ebf57c0e')
+          expect((result as ResponseSigning)?.signature).toEqual(signatureExpected.signature)
         });
 
       await expect(extension.handle('1615192062290.7', 'pri(signing.approve.password)', {
@@ -291,9 +308,16 @@ describe('Extension', () => {
         version: 4,
       } as unknown as SignerPayloadJSON;
 
+      const registry = new TypeRegistry();
+      registry.setSignedExtensions(payload.signedExtensions, userExtensions);
+      registry.register(types);
+
+      const signatureExpected = registry
+        .createType('ExtrinsicPayload', payload, { version: payload.version }).sign(pair);
+
       tabs.handle('1615191860771.5', 'pub(extrinsic.sign)', payload, 'http://localhost:3000',{} as chrome.runtime.Port)
         .then((result ) => {
-          expect((result as ResponseSigning)?.signature).toEqual('0x00d5740b2f51c93f762d253a8fb16ed73e8475f1306f8e9852d716247cfaff3561ff10027f3cdee5a349a7da4a0eba281f375f10540a5ea3016dc4c45a4bda9004')
+          expect((result as ResponseSigning)?.signature).toEqual(signatureExpected.signature);
         });
 
       await expect(extension.handle('1615192062290.7', 'pri(signing.approve.password)', {
