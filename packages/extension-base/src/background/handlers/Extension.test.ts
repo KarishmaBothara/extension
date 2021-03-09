@@ -207,6 +207,67 @@ describe('Extension', () => {
     });
 
     test('signs with user extensions, known types', async () => {
+      const types = {}  as unknown as Record<string, string>;
+
+      const userExtensions = {
+        MyUserExtension: {
+            payload: {},
+            extrinsic: {
+              assetId: 'AssetId',
+            },
+          },
+      } as unknown as ExtDef;
+
+      const meta: MetadataDef = {
+        chain: "Development",
+        genesisHash: "0x242a54b35e1aad38f37b884eddeb71f6f9931b02fac27bf52dfb62ef754e5e62",
+        icon: "",
+        ss58Format: 0,
+        tokenDecimals: 12,
+        tokenSymbol: "",
+        types,
+        userExtensions,
+        color: "#191a2e",
+        specVersion: 38
+      };
+      state.saveMetadata(meta);
+
+      const payload = {
+        address,
+        blockHash: "0xe1b1dda72998846487e4d858909d4f9a6bbd6e338e4588e5d809de16b1317b80",
+        blockNumber: "0x00000393",
+        era: "0x3601",
+        genesisHash: "0x242a54b35e1aad38f37b884eddeb71f6f9931b02fac27bf52dfb62ef754e5e62",
+        method: "0x040105fa8eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a4882380100",
+        nonce: "0x0000000000000000",
+        signedExtensions: ["MyUserExtension"],
+        specVersion: "0x00000026",
+        tip: null,
+        transactionVersion: "0x00000005",
+        version: 4,
+      } as unknown as SignerPayloadJSON;
+
+      const registry = new TypeRegistry();
+      registry.setSignedExtensions(payload.signedExtensions, userExtensions);
+      registry.register(types);
+
+      const signatureExpected = registry
+        .createType('ExtrinsicPayload', payload, { version: payload.version }).sign(pair);
+
+      tabs.handle('1615191860771.5', 'pub(extrinsic.sign)', payload, 'http://localhost:3000',{} as chrome.runtime.Port)
+        .then((result ) => {
+          expect((result as ResponseSigning)?.signature).toEqual(signatureExpected.signature)
+        });
+
+      await expect(extension.handle('1615192062290.7', 'pri(signing.approve.password)', {
+        id: state.allSignRequests[0].id,
+        password,
+        savePass: false
+      }, {} as chrome.runtime.Port)).resolves.toEqual(true);
+
+    });
+
+    test('override default signed extension', async () => {
       const types = {
         PaymentOptions: {
           feeExchange: "FeeExchangeV1",
@@ -219,12 +280,12 @@ describe('Extension', () => {
       }  as unknown as Record<string, string>;
 
       const userExtensions = {
-          ChargeTransactionPayment: {
-            payload: {},
-            extrinsic: {
-              transactionPayment: 'PaymentOptions',
-            },
+        ChargeTransactionPayment: {
+          payload: {},
+          extrinsic: {
+            transactionPayment: 'PaymentOptions',
           },
+        },
       } as unknown as ExtDef;
 
       const meta: MetadataDef = {
